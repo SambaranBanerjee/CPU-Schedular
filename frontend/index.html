@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CPU Scheduling Simulator</title>
+    <style>
+        body {
+            margin: 0;
+            background: #121212;
+            color: #eee;
+            font-family: Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow-y: hidden;
+        }
+
+        /* Left panel (1/3 width) */
+        .left-panel {
+            width: 30%;
+            padding: 20px;
+            height: 700px;
+            border-right: 1px solid #333;
+            box-sizing: border-box;
+        }
+
+        /* Right panel (2/3 width) */
+        .right-panel {
+            width: 70%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Scheduler type buttons */
+        .algo-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .algo-btn {
+            padding: 8px 12px;
+            border: 1px solid #555;
+            background: #1d1d1d;
+            color: #eee;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: 0.2s;
+        }
+
+        .algo-btn:hover {
+            background: #272727;
+        }
+
+        .algo-active {
+            background: #3f51b5;
+            border-color: #3f51b5;
+        }
+
+        /* Form styles */
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+
+        input {
+            width: 95%;
+            padding: 6px;
+            margin-top: 4px;
+            margin-bottom: 10px;
+            background: #1d1d1d;
+            border: 1px solid #555;
+            color: #eee;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 10px 16px;
+            border: none;
+            background: #3f51b5;
+            color: #fff;
+            cursor: pointer;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background: #5c6bc0;
+        }
+
+        /* Gantt chart display area */
+        #gantt-chart {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            height: calc(100% - 70px);
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .process-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .small-input {
+            width: 28%;
+        }
+
+        .priority-input {
+            width: 20%;
+        }
+    </style>
+</head>
+<body>
+
+<div class="left-panel">
+
+    <!-- Scheduling Type Buttons -->
+    <div class="algo-buttons">
+        <div class="algo-btn" data-type="FCFS">FCFS</div>
+        <div class="algo-btn" data-type="SJF">SJF</div>
+        <div class="algo-btn" data-type="SRTF">SRTF</div>
+        <div class="algo-btn" data-type="PRIORITY">PRIORITY</div>
+        <div class="algo-btn algo-active" data-type="RR">RR</div>
+    </div>
+
+    <h3 id="form-title">Round Robin Parameters</h3>
+
+    <!-- Form -->
+    <form id="schedule-form">
+
+        <div id="quantum-field">
+            <label>Time Quantum</label>
+            <input type="number" id="quantum" placeholder="Enter time quantum">
+        </div>
+
+        <hr style="border-color:#333; margin:15px 0;">
+
+        <h4>Processes</h4>
+        <div id="process-container"></div>
+
+        <button type="button" id="add-process">Add Process</button>
+        <button type="submit">Run Scheduler</button>
+
+    </form>
+
+</div>
+
+
+<!-- Right Gantt Chart Area -->
+<div class="right-panel">
+    <h3>Gantt Chart</h3>
+    <div id="gantt-chart">
+        <!-- JS will render chart here -->
+    </div>
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
