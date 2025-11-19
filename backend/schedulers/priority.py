@@ -1,4 +1,5 @@
 from typing import List, Dict, Tuple, Any
+#The processes are in a list of Dictionary labelled by process name (string) and value (type = any)
 def priority_scheduling(processes: List[Dict[str, Any]]) -> Tuple[List[Tuple[Any, float, float]], Dict[Any, Dict[str, float]]]:
     
     proc_list = [
@@ -10,7 +11,7 @@ def priority_scheduling(processes: List[Dict[str, Any]]) -> Tuple[List[Tuple[Any
         }
         for p in processes
     ]
-    #We sort the process list on the basis of arrival time
+    #I sort the process list on the basis of arrival time
     proc_list.sort(key=lambda x: x["arrival"])
 
     n = len(proc_list)
@@ -41,14 +42,14 @@ def priority_scheduling(processes: List[Dict[str, Any]]) -> Tuple[List[Tuple[Any
             time = next_arrival
             continue
 
-        #We select highest priority (lowest priority value wins)
+        #I select highest priority (lowest priority value wins)
         current = min(ready, key=lambda x: x["priority"])
         pid = current["pid"]
 
         start = time
         end = start + burst[pid]
 
-        # Now we execute the schedule
+        # Now I execute the schedule
         schedule.append((pid, start, end))
 
         completion[pid] = end

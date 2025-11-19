@@ -25,15 +25,18 @@ def schedule():
 
         algorithm = data.get("algorithm")
         processes = data.get("processes")
-        quantum = data.get("quantum", None)
+        quantum = data.get("quantum", None) #As quantum is only for round robin method, I have kept a default of None
 
+        #I am checking if processes variable is empty
         if not processes:
-            return jsonify({"error" : "No process data provided"}), 400
+            return jsonify({"error" : "No process data provided"}), 400 
         
+        #If not then:-
         if algorithm == "RR":
+            #Quantum is needed for Round Robin method
             if quantum is None:
                 return jsonify({"error": "Quantum missing for RR"}), 400
-            schedule, stats = round_robin(processes, float(quantum))    
+            schedule, stats = round_robin(processes, float(quantum))
             schedule = [{"pid": s[0], "start": s[1], "end": s[2]} for s in schedule]
         
         elif algorithm == "PRIORITY":
