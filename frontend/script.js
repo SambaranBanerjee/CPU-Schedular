@@ -16,6 +16,47 @@ algoButtons.forEach(btn => {
         quantumField.style.display = selectedAlgo === "RR" ? "block" : "none";
     });
 });
+function fcfs(processes) {
+
+    /* --- FIXED: id → pid (your input uses pid) --- */
+    processes.forEach(p => {
+        if (!p.pid) p.pid = p.id;
+    });
+
+    let currentTime = 0;
+    let result = [];
+    let gantt = [];
+
+    /* --- FIXED: sort by arrival time --- */
+    processes.sort((a, b) => a.arrival - b.arrival);
+
+    processes.forEach(p => {
+        if (currentTime < p.arrival) currentTime = p.arrival;
+
+        let start = currentTime;
+        let finish = start + p.burst;
+
+        result.push({
+            pid: p.pid,
+            burst: p.burst,
+            start: start,
+            completion: finish,
+            turnaround: finish - p.arrival, /* --- FIXED --- */
+            waiting: start - p.arrival      /* --- FIXED --- */
+        });
+
+        gantt.push({
+            pid: p.pid,
+            start: start,
+            end: finish
+        });
+
+        currentTime = finish;
+    });
+
+    return { table: result, gantt: gantt };
+}
+
 
 function addProcessRow() {
     const row = document.createElement("div");
