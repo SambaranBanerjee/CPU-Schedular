@@ -1,0 +1,148 @@
+from typing import List, Dict, Tuple, Any
+import matplotlib.pyplot as plt
+
+def sjf(processes: List[Dict[str, Any]]) -> Tuple[List[Tuple[Any, float, float]], Dict[Any, Dict[str, float]]]:
+    # Defensive copy and sort by arrival
+    proc_list = [{"pid": p["pid"], "arrival": float(p["arrival"]), "burst": float(p["burst"])} for p in processes]
+    proc_list.sort(key=lambda x: x["arrival"])
+
+    n = len(proc_list)
+    arrival = {p["pid"]: p["arrival"] for p in proc_list}
+    burst = {p["pid"]: p["burst"] for p in proc_list}
+
+    schedule = []  # (pid, start, end)
+    completion = {}
+
+    ready = []
+    time = 0.0
+    i = 0  # index for arrivals
+
+    # Initial step: if first arrival > 0, idle till then
+    if proc_list and proc_list[0]["arrival"] > 0:
+        schedule.append(("IDLE", 0.0, proc_list[0]["arrival"]))
+        time = proc_list[0]["arrival"]
+
+    while len(completion) < n:
+        # Add all arrivals up to current time
+        while i < n and proc_list[i]["arrival"] <= time:
+            ready.append(proc_list[i])
+            i += 1
+
+        if not ready:
+            # No ready process → go to next arrival
+            next_arrival = proc_list[i]["arrival"]
+            schedule.append(("IDLE", time, next_arrival))
+            time = next_arrival
+            continue
+
+        # Pick shortest job
+        ready.sort(key=lambda x: x["burst"])
+        p = ready.pop(0)
+
+        start = time
+        end = start + p["burst"]
+        schedule.append((p["pid"], start, end))
+        time = end
+        completion[p["pid"]] = end
+
+    # Compute stats
+    stats = {}
+    total_tat = total_wt = 0.0
+
+    for p in proc_list:
+        pid = p["pid"]
+        tat = completion[pid] - arrival[pid]
+        wt = tat - burst[pid]
+        stats[pid] = {
+            "arrival": arrival[pid],
+            "burst": burst[pid],
+            "completion": completion[pid],
+            "turnaround": tat,
+            "waiting": wt,
+        }
+        total_tat += tat
+        total_wt += wt
+
+    stats["average"] = {
+        "turnaround": total_tat / n,
+        "waiting": total_wt / n,
+    }
+
+    return schedule, stats
+
+
+def plot_gantt(schedule: List[Tuple[Any, float, float]], title: str = "SJF Gantt Chart") -> None:
+    pids = []
+    for seg in schedule:
+        pid = seg[0]
+        if pid != "IDLE" and pid not in pids:
+            pids.append(pid)
+    if any(seg[0] == "IDLE" for seg in schedule):
+        pids.append("IDLE")
+
+    y_pos = {pid: idx for idx, pid in enumerate(reversed(pids))}
+
+    cmap = plt.get_cmap("tab20")
+    color_map = {}
+    for idx, pid in enumerate(pids):
+        if pid == "IDLE":
+            color_map[pid] = "#cccccc"
+        else:
+            color_map[pid] = cmap(idx % 20)
+
+    fig, ax = plt.subplots(figsize=(10, max(2, len(pids) * 0.6)))
+    for pid, start, end in schedule:
+        ax.barh(y=y_pos[pid], width=end - start, left=start,
+                height=0.6, color=color_map[pid], edgecolor="black")
+        mid = (start + end) / 2
+        if end - start >= 0.5:
+            ax.text(mid, y_pos[pid], str(pid), ha="center", va="center")
+
+    ax.set_yticks(list(y_pos.values()))
+    ax.set_yticklabels(list(reversed(list(y_pos.keys()))))
+    ax.set_xlabel("Time")
+    ax.set_title(title)
+    ax.grid(axis="x", linestyle="--", alpha=0.4)
+    plt.tight_layout()
+    plt.show()
+
+
+if __name__ == "__main__":
+    print("SJF Scheduler — interactive mode")
+    print("Enter processes. Leave PID empty to finish.")
+
+    processes = []
+    i = 1
+    while True:
+        pid = input(f"PID for process #{i} (blank to end): ").strip()
+        if pid == "":
+            if processes:
+                break
+            else:
+                print("Enter at least one process!")
+                continue
+
+        arrival = float(input(f"Arrival time for {pid}: "))
+        burst = float(input(f"Burst time for {pid}: "))
+        processes.append({"pid": pid, "arrival": arrival, "burst": burst})
+        i += 1
+
+    schedule, stats = sjf(processes)
+
+    print("\nGantt Schedule:")
+    for seg in schedule:
+        print(seg)
+
+    print("\nPer-process stats:")
+    for pid, s in stats.items():
+        if pid == "average":
+            continue
+        print(f"{pid}: arrival={s['arrival']}, burst={s['burst']}, completion={s['completion']}, "
+              f"turnaround={s['turnaround']}, waiting={s['waiting']}")
+
+    print("\nAverages:", stats["average"])
+
+    try:
+        plot_gantt(schedule)
+    except Exception as e:
+        print("Chart error:", e)
