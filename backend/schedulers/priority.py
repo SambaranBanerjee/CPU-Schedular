@@ -1,10 +1,16 @@
 from typing import List, Dict, Tuple, Any
 def priority_scheduling(processes: List[Dict[str, Any]]) -> Tuple[List[Tuple[Any, float, float]], Dict[Any, Dict[str, float]]]:
-    # Defensive copy and sorting by arrival
+    
     proc_list = [
-        {"pid": p["pid"], "arrival": float(p["arrival"]), "burst": float(p["burst"]), "priority": float(p["priority"])}
+        {
+            "pid": p["pid"], 
+            "arrival": float(p["arrival"]), 
+            "burst": float(p["burst"]), 
+            "priority": float(p["priority"])
+        }
         for p in processes
     ]
+    #We sort the process list on the basis of arrival time
     proc_list.sort(key=lambda x: x["arrival"])
 
     n = len(proc_list)
@@ -20,15 +26,14 @@ def priority_scheduling(processes: List[Dict[str, Any]]) -> Tuple[List[Tuple[Any
     completed_count = 0
 
     while completed_count < n:
-
-        # Collect all arrived & not finished processes
+        # This collects all arrived & not finished processes
         ready = [
             p for p in proc_list
             if p["arrival"] <= time and p["pid"] not in finished
         ]
 
         if not ready:
-            # CPU idle → jump to next arrival
+            # Now I am adding a condition that if CPU is idle then jump to next arrival
             next_arrival = min(
                 [p["arrival"] for p in proc_list if p["pid"] not in finished]
             )
@@ -36,30 +41,28 @@ def priority_scheduling(processes: List[Dict[str, Any]]) -> Tuple[List[Tuple[Any
             time = next_arrival
             continue
 
-        # Select highest priority (lowest priority value wins)
+        #We select highest priority (lowest priority value wins)
         current = min(ready, key=lambda x: x["priority"])
         pid = current["pid"]
 
         start = time
         end = start + burst[pid]
 
-        # Schedule execution
+        # Now we execute the schedule
         schedule.append((pid, start, end))
 
-        # Update
         completion[pid] = end
         finished.add(pid)
         completed_count += 1
         time = end
 
-    # ----- Compute Statistics -----
     stats = {}
     total_tat = total_wt = 0.0
 
     for p in proc_list:
         pid = p["pid"]
-        tat = completion[pid] - arrival[pid]
-        wt = tat - burst[pid]
+        tat = completion[pid] - arrival[pid]    #Turnaround time
+        wt = tat - burst[pid]   #Waiting time
         stats[pid] = {
             "arrival": arrival[pid],
             "burst": burst[pid],
