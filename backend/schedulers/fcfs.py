@@ -1,49 +1,62 @@
-# schedulers/fcfs.py
+from typing import List, Dict, Tuple, Any
 
-def fcfs(processes):
-    """
-    FCFS Scheduling Algorithm
-    processes = [
-        {"pid": "P1", "burst": 5, "arrival": 0},
-        ...
-    ]
-    """
+def fcfs(processes: List[Dict[str, Any]]) -> Tuple[List[Tuple[Any, float, float]], Dict[Any, Dict[str, float]]]:
+    # Defensive copy & normalize fields
+    proc_list = [{
+        "pid": p["pid"],
+        "arrival": float(p.get("arrival", 0)),
+        "burst": float(p["burst"])
+    } for p in processes]
 
-    
-    for p in processes:
-        if "arrival" not in p:
-            p["arrival"] = 0
+    proc_list.sort(key=lambda x: x["arrival"])
 
-    
-    processes = sorted(processes, key=lambda x: x["arrival"])
+    n = len(proc_list)
+    arrival = {p["pid"]: p["arrival"] for p in proc_list}
+    burst = {p["pid"]: p["burst"] for p in proc_list}
 
-    current_time = 0
-    schedule = []
-    stats = []
+    schedule = []   # (pid, start, end)
+    completion = {}
 
-    for p in processes:
+    time = 0.0
+    stats = {}
+
+    for p in proc_list:
         pid = p["pid"]
-        burst = float(p["burst"])
-        arrival = float(p["arrival"])
+        at = arrival[pid]
+        bt = burst[pid]
 
-        
-        start_time = max(current_time, arrival)
-        completion_time = start_time + burst
+        if time < at:
+            schedule.append(("IDLE", time, at))
+            time = at
 
-        schedule.append({
-            "pid": pid,
-            "start": start_time,
-            "end": completion_time
-        })
-        stats.append({
-            "pid": pid,
-            "arrival": arrival,
-            "burst": burst,
-            "completion": completion_time,
-            "turnaround": completion_time - arrival,
-            "waiting": start_time - arrival
-        })
+        start = time
+        end = start + bt
 
-        current_time = completion_time
+        schedule.append((pid, start, end))
+        completion[pid] = end
+        time = end
 
-    return schedule, stats
+    # Stats
+    total_tat = total_wt = 0.0
+    out_stats = {}
+
+    for p in proc_list:
+        pid = p["pid"]
+        tat = completion[pid] - arrival[pid]
+        wt = tat - burst[pid]
+        out_stats[pid] = {
+            "arrival": arrival[pid],
+            "burst": burst[pid],
+            "completion": completion[pid],
+            "turnaround": tat,
+            "waiting": wt
+        }
+        total_tat += tat
+        total_wt += wt
+
+    out_stats["average"] = {
+        "turnaround": total_tat / n if n else 0.0,
+        "waiting": total_wt / n if n else 0.0
+    }
+
+    return schedule, out_stats

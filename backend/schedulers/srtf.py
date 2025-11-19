@@ -1,3 +1,4 @@
+from typing import List, Dict, Tuple, Any
 def srtf(processes: List[Dict[str, Any]]) -> Tuple[List[Tuple[Any, float, float]], Dict[Any, Dict[str, float]]]:
     # Defensive copy and sort by arrival
     proc_list = [{"pid": p["pid"], "arrival": float(p["arrival"]), "burst": float(p["burst"])}
