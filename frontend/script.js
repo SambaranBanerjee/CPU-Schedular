@@ -79,21 +79,31 @@ form.addEventListener("submit", async (e) => {
     });
 
     const data = await res.json();
-    renderGantt(data.schedule);
+    renderGantt(data.schedule, data.gantt_image);
 });
 
-function renderGantt(schedule) {
+function renderGantt(schedule, image64) {
     ganttChart.innerHTML = "";
-    if (!schedule) return;
 
+    if (image64) {
+        const img = document.createElement("img");
+        img.src = `data:image/png;base64,${image64}`;
+        img.style.width = "100%";
+        img.style.borderRadius = "6px";
+        ganttChart.appendChild(img);
+        return;
+    }
+
+    // fallback for non-image algorithms
     schedule.forEach(seg => {
         const block = document.createElement("div");
         block.style.display = "inline-block";
         block.style.padding = "10px";
-        block.style.marginRight = "6px";
-        block.style.background = seg.pid === "IDLE" ? "#777" : "#3f51b5";
+        block.style.marginRight = "4px";
+        block.style.background = "#3f51b5";
         block.style.borderRadius = "4px";
         block.textContent = `${seg.pid} (${seg.start}-${seg.end})`;
         ganttChart.appendChild(block);
     });
 }
+
