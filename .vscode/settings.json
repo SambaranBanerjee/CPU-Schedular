@@ -1,6 +1,17 @@
 {
     "cSpell.words": [
+        "cmap",
+        "edgecolor",
         "fcfs",
-        "srtf"
+        "figsize",
+        "fontsize",
+        "gantt",
+        "linestyle",
+        "pids",
+        "popleft",
+        "srtf",
+        "xlabel",
+        "yticklabels",
+        "yticks"
     ]
 }

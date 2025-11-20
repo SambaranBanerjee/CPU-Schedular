@@ -1,0 +1,181 @@
+/* GLOBAL */
+        body {
+            margin: 0;
+            background: #0d0d0d;
+            color: #e6e6e6;
+            font-family: "Inter", Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Left Panel */
+        .left-panel {
+            width: 32%;
+            padding: 24px;
+            height: 100vh;
+            border-right: 1px solid #1d1d1d;
+            background: linear-gradient(180deg, #111111, #0c0c0c);
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+        /* Right Panel */
+        .right-panel {
+            width: 68%;
+            padding: 24px;
+            box-sizing: border-box;
+            background: #0d0d0d;
+            overflow-y: auto;
+        }
+
+        /* Algorithm Buttons */
+        .algo-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .algo-btn {
+            padding: 10px 14px;
+            border: 1px solid #2c2c2c;
+            background: rgba(25, 25, 25, 0.6);
+            backdrop-filter: blur(6px);
+            color: #eee;
+            cursor: pointer;
+            font-size: 14px;
+            border-radius: 8px;
+            transition: 0.25s ease;
+        }
+
+        .algo-btn:hover {
+            background: rgba(60, 60, 60, 0.8);
+        }
+
+        .algo-active {
+            background: linear-gradient(90deg, #3949ab, #5c6bc0);
+            border-color: transparent;
+            color: white;
+            box-shadow: 0px 0px 10px rgba(92, 107, 192, 0.5);
+        }
+
+        /* Section Headings */
+        h3, h4 {
+            margin: 10px 0;
+            font-weight: 600;
+            color: #b1b1b1;
+        }
+
+        /* Form Inputs */
+        label {
+            margin-top: 12px;
+            font-size: 14px;
+            color: #bbbbbb;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 6px;
+            background: #111;
+            border: 1px solid #2d2d2d;
+            color: #e8e8e8;
+            border-radius: 6px;
+            transition: 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #5c6bc0;
+            box-shadow: 0 0 6px rgba(92, 107, 192, 0.6);
+        }
+
+        /* Buttons */
+        button {
+            padding: 12px 18px;
+            border: none;
+            background: linear-gradient(90deg, #3f51b5, #5c6bc0);
+            color: white;
+            cursor: pointer;
+            margin-top: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: 0.3s ease;
+        }
+
+        button:hover {
+            background: linear-gradient(90deg, #5c6bc0, #7e88d6);
+            box-shadow: 0px 0px 10px rgba(92, 107, 192, 0.4);
+        }
+
+        /* Process Rows */
+        .process-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            background: rgba(20, 20, 20, 0.6);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #222;
+            transition: 0.2s;
+        }
+
+        .process-row:hover {
+            background: rgba(35, 35, 35, 0.8);
+        }
+
+        /* Inputs sizing */
+        .small-input {
+            width: 28%;
+        }
+
+        .priority-input {
+            width: 22%;
+        }
+
+        /* Delete Button */
+        .process-row button {
+            background: #b71c1c;
+            padding: 6px 10px;
+            border-radius: 6px;
+            margin-top: 6px;
+        }
+
+        .process-row button:hover {
+            background: #d32f2f;
+        }
+
+        /* Divider */
+        hr {
+            border-color: #333;
+            opacity: 0.4;
+        }
+
+        /* GANTT CHART */
+        #gantt-chart {
+            background: rgba(15, 15, 15, 0.7);
+            border: 1px solid #1d1d1d;
+            height: calc(100% - 50px);
+            border-radius: 10px;
+            padding: 20px;
+            overflow-x: auto;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Gantt Blocks */
+        #gantt-chart div {
+            padding: 12px 16px !important;
+            font-size: 14px;
+            margin-bottom: 8px;
+            border-radius: 6px !important;
+            color: #fff;
+            font-weight: 500;
+            transition: 0.2s ease;
+        }
+
+        #gantt-chart div:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(100, 149, 237, 0.4);
+        }
