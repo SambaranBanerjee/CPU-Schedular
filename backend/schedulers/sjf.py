@@ -1,5 +1,8 @@
 from typing import List, Dict, Tuple, Any
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import io, base64
 
 def sjf(processes: List[Dict[str, Any]]) -> Tuple[List[Tuple[Any, float, float]], Dict[Any, Dict[str, float]]]:
     # Defensive copy and sort by arrival
@@ -71,78 +74,41 @@ def sjf(processes: List[Dict[str, Any]]) -> Tuple[List[Tuple[Any, float, float]]
     return schedule, stats
 
 
-def plot_gantt(schedule: List[Tuple[Any, float, float]], title: str = "SJF Gantt Chart") -> None:
+def generate_sjf_gantt(schedule, title="SJF Gantt Chart"):
     pids = []
-    for seg in schedule:
-        pid = seg[0]
+    for pid, _, _ in schedule:
         if pid != "IDLE" and pid not in pids:
             pids.append(pid)
     if any(seg[0] == "IDLE" for seg in schedule):
         pids.append("IDLE")
 
     y_pos = {pid: idx for idx, pid in enumerate(reversed(pids))}
-
     cmap = plt.get_cmap("tab20")
-    color_map = {}
-    for idx, pid in enumerate(pids):
-        if pid == "IDLE":
-            color_map[pid] = "#cccccc"
-        else:
-            color_map[pid] = cmap(idx % 20)
 
-    fig, ax = plt.subplots(figsize=(10, max(2, len(pids) * 0.6)))
-    for pid, start, end in schedule:
-        ax.barh(y=y_pos[pid], width=end - start, left=start,
-                height=0.6, color=color_map[pid], edgecolor="black")
+    fig, ax = plt.subplots(figsize=(10, 2 + len(pids) * 0.3))
+    for idx, (pid, start, end) in enumerate(schedule):
+        color = "#cccccc" if pid == "IDLE" else cmap(idx % 20)
+        ax.barh(
+            y=y_pos[pid],
+            width=end - start,
+            left=start,
+            height=0.6,
+            color=color,
+            edgecolor="black",
+        )
+
         mid = (start + end) / 2
         if end - start >= 0.5:
-            ax.text(mid, y_pos[pid], str(pid), ha="center", va="center")
+            ax.text(mid, y_pos[pid], pid, ha="center", va="center", fontsize=8)
 
     ax.set_yticks(list(y_pos.values()))
-    ax.set_yticklabels(list(reversed(list(y_pos.keys()))))
+    ax.set_yticklabels(list(reversed(pids)))
     ax.set_xlabel("Time")
     ax.set_title(title)
-    ax.grid(axis="x", linestyle="--", alpha=0.4)
-    plt.tight_layout()
-    plt.show()
+    ax.grid(axis="x", linestyle="--", alpha=0.3)
 
-
-if __name__ == "__main__":
-    print("SJF Scheduler — interactive mode")
-    print("Enter processes. Leave PID empty to finish.")
-
-    processes = []
-    i = 1
-    while True:
-        pid = input(f"PID for process #{i} (blank to end): ").strip()
-        if pid == "":
-            if processes:
-                break
-            else:
-                print("Enter at least one process!")
-                continue
-
-        arrival = float(input(f"Arrival time for {pid}: "))
-        burst = float(input(f"Burst time for {pid}: "))
-        processes.append({"pid": pid, "arrival": arrival, "burst": burst})
-        i += 1
-
-    schedule, stats = sjf(processes)
-
-    print("\nGantt Schedule:")
-    for seg in schedule:
-        print(seg)
-
-    print("\nPer-process stats:")
-    for pid, s in stats.items():
-        if pid == "average":
-            continue
-        print(f"{pid}: arrival={s['arrival']}, burst={s['burst']}, completion={s['completion']}, "
-              f"turnaround={s['turnaround']}, waiting={s['waiting']}")
-
-    print("\nAverages:", stats["average"])
-
-    try:
-        plot_gantt(schedule)
-    except Exception as e:
-        print("Chart error:", e)
+    buffer = io.BytesIO()
+    plt.savefig(buffer, format="png", dpi=150, bbox_inches="tight")
+    plt.close()
+    buffer.seek(0)
+    return base64.b64encode(buffer.getvalue()).decode("utf-8")

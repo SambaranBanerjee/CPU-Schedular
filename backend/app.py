@@ -1,11 +1,11 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-from schedulers.rr import round_robin
-from schedulers.priority import priority_scheduling
-from schedulers.fcfs import fcfs
-from schedulers.sjf import sjf
-from schedulers.srtf import srtf
+from schedulers.rr import round_robin, generate_gantt_image
+from schedulers.priority import priority_scheduling, generate_priority_gantt
+from schedulers.fcfs import fcfs, generate_fcfs_gantt
+from schedulers.sjf import sjf, generate_sjf_gantt
+from schedulers.srtf import srtf, generate_srtf_gantt
 
 app = Flask(__name__)
 CORS(app) #This allows access for frontend
@@ -24,44 +24,62 @@ def schedule():
         data = request.get_json()
 
         algorithm = data.get("algorithm")
-        processes = data.get("processes")
-        quantum = data.get("quantum", None) #As quantum is only for round robin method, I have kept a default of None
-
-        #I am checking if processes variable is empty
-        if not processes:
-            return jsonify({"error" : "No process data provided"}), 400 
+        processes = data.get("processes", [])
         
         #If not then:-
         if algorithm == "RR":
-            #Quantum is needed for Round Robin method
-            if quantum is None:
-                return jsonify({"error": "Quantum missing for RR"}), 400
-            schedule, stats = round_robin(processes, float(quantum))
-            schedule = [{"pid": s[0], "start": s[1], "end": s[2]} for s in schedule]
+            quantum = float(data.get("quantum"))
+            schedule, stats = round_robin(processes, quantum)
+            image = generate_gantt_image(schedule, title=f"Round Robin (q={quantum})")
+            
+            return jsonify({
+                "schedule": schedule,
+                "stats": stats,
+                "gantt_image": image
+            })
         
         elif algorithm == "PRIORITY":
             schedule, stats = priority_scheduling(processes)
-            schedule = [{"pid": s[0], "start": s[1], "end": s[2]} for s in schedule]
+            image = generate_priority_gantt(schedule)
+
+            return jsonify({
+                "schedule": schedule,
+                "stats": stats,
+                "gantt_image": image
+            })
 
         elif algorithm == "FCFS":
             schedule, stats = fcfs(processes)
-            schedule = [{"pid": s[0], "start": s[1], "end": s[2]} for s in schedule]
-        
+            image = generate_fcfs_gantt(schedule)
+
+            return jsonify({
+                "schedule": schedule,
+                "stats": stats,
+                "gantt_image": image
+            })
+                
         elif algorithm == "SJF":
             schedule, stats = sjf(processes)
-            schedule = [{"pid": s[0], "start": s[1], "end": s[2]} for s in schedule]
+            image = generate_sjf_gantt(schedule)
+
+            return jsonify({
+                "schedule": schedule,
+                "stats": stats,
+                "gantt_image": image
+            })
         
         elif algorithm == "SRTF":
             schedule, stats = srtf(processes)
-            schedule = [{"pid": s[0], "start": s[1], "end": s[2]} for s in schedule]
+            image = generate_srtf_gantt(schedule)
+
+            return jsonify({
+                "schedule": schedule,
+                "stats": stats,
+                "gantt_image": image
+            })
         
         else:
             return jsonify({"error": f"Unknown algorithm '{algorithm}"}), 400
-        
-        return jsonify({
-            "schedule": schedule,
-            "stats": stats
-        })
     
     except Exception as e:
         return jsonify({"error": str(e)}), 500
