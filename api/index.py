@@ -1,11 +1,15 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import sys
 import os
 import traceback
 
-# Add the project root to system path so we can import 'schedulers'
+# Add the project root to system path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Define the path to the frontend folder relative to this file
+# api/index.py -> parent -> frontend
+FRONTEND_FOLDER = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'frontend')
 
 # Import schedulers
 try:
@@ -20,19 +24,18 @@ except ImportError as e:
 app = Flask(__name__)
 CORS(app)
 
-# --- 404 Debug Handler ---
-# This replaces the default HTML 404 with a JSON response.
-# It helps us see exactly what path Flask is receiving.
-@app.errorhandler(404)
-def page_not_found(e):
-    return jsonify({
-        "error": "404 Not Found",
-        "message": "The requested URL was not found on the server.",
-        "path_received": request.path,
-        "method": request.method
-    }), 404
+# --- Routes to Serve Frontend (Fallback) ---
+@app.route('/')
+def serve_frontend():
+    # Serves the index.html file when / is requested
+    return send_from_directory(FRONTEND_FOLDER, 'index.html')
 
-# Root API route to check status
+@app.route('/<path:filename>')
+def serve_static_files(filename):
+    # Serves CSS, JS, and other static files
+    return send_from_directory(FRONTEND_FOLDER, filename)
+
+# --- API Routes ---
 @app.route('/api')
 @app.route('/api/')
 def home():
