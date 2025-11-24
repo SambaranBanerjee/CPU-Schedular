@@ -90,11 +90,10 @@ pip install -r requirements.txt</pre>
 
 <hr>
 
-<h2>▶️ Preview Video</h2>
-<video width="640" controls>
-  <source src="https://youtu.be/DQa_G_8p_3Q" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+## ▶️ Preview Video
+
+[![Preview Video](https://img.youtube.com/vi/DQa_G_8p_3Q/0.jpg)](https://youtu.be/DQa_G_8p_3Q)
+
 
 <hr>
 
