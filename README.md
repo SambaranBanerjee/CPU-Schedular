@@ -92,6 +92,7 @@ pip install -r requirements.txt</pre>
 
 ## ▶️ Preview Video
 
+Click here to reach the youtube video.
 [![Preview Video](https://img.youtube.com/vi/DQa_G_8p_3Q/0.jpg)](https://youtu.be/DQa_G_8p_3Q)
 
 
