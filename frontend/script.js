@@ -1,109 +1,105 @@
-let selectedAlgo = "RR";
-
-const algoButtons = document.querySelectorAll(".algo-btn");
-const formTitle = document.getElementById("form-title");
-const quantumField = document.getElementById("quantum-field");
 const processContainer = document.getElementById("process-container");
-const addProcessBtn = document.getElementById("add-process");
-const form = document.getElementById("schedule-form");
-const ganttChart = document.getElementById("gantt-chart");
-
-algoButtons.forEach(btn => {
-    btn.addEventListener("click", () => {
-        algoButtons.forEach(b => b.classList.remove("algo-active"));
-        btn.classList.add("algo-active");
-        selectedAlgo = btn.dataset.type;
-
-        formTitle.textContent = `${selectedAlgo} Parameters`;
-        quantumField.style.display = selectedAlgo === "RR" ? "block" : "none";
-
-        renderProcessInputs();
-    });
-});
-
-function renderProcessInputs() {
-    processContainer.innerHTML = "";
-    addProcessRow();
-}
+const addBtn = document.getElementById("add-process");
 
 function addProcessRow() {
     const row = document.createElement("div");
-    row.classList.add("process-row");
-
+    row.className = "process-row";
     row.innerHTML = `
-        <input class="small-input" placeholder="PID">
-        <input class="small-input" type="number" placeholder="Arrival">
-        <input class="small-input" type="number" placeholder="Burst">
-        ${selectedAlgo === "PRIORITY" ? `<input class="priority-input" type="number" placeholder="Priority">` : ""}
-        <button type="button" onclick="this.parentElement.remove()">X</button>
+        <div style="display:flex; gap:5px; align-items:center; width:100%;">
+            <div><label>AT</label><input type="number" class="arrival" value="0"></div>
+            <div><label>BT</label><input type="number" class="burst" value="5"></div>
+            <div><label>Prio</label><input type="number" class="priority-input" value="1"></div>
+            <div><label>Q</label><input type="number" class="quantum-input" value="2"></div>
+            <button class="remove-btn" type="button">X</button>
+        </div>
     `;
-
+    row.querySelector(".remove-btn").onclick = () => row.remove();
     processContainer.appendChild(row);
 }
 
-addProcessBtn.addEventListener("click", addProcessRow);
 addProcessRow();
+addBtn.addEventListener("click", addProcessRow);
 
-form.addEventListener("submit", async (e) => {
+document.getElementById("schedule-form").addEventListener("submit", async (e) => {
     e.preventDefault();
 
+    const rows = document.querySelectorAll(".process-row");
     const processes = [];
-    document.querySelectorAll(".process-row").forEach(row => {
-        const inputs = row.querySelectorAll("input");
-        const [pid, arrival, burst] = inputs;
-        const pr = inputs[3];
-
-        if (pid.value && arrival.value && burst.value) {
-            const obj = {
-                pid: pid.value,
-                arrival: Number(arrival.value),
-                burst: Number(burst.value)
-            };
-            if (selectedAlgo === "PRIORITY" && pr?.value)
-                obj.priority = Number(pr.value);
-
-            processes.push(obj);
-        }
+    rows.forEach((row, index) => {
+        processes.push({
+            pid: index + 1,
+            arrival: parseFloat(row.querySelector(".arrival").value) || 0,
+            burst: parseFloat(row.querySelector(".burst").value) || 0,
+            priority: parseFloat(row.querySelector(".priority-input").value) || 0,
+            quantum: parseFloat(row.querySelector(".quantum-input").value) || 2
+        });
     });
 
-    const body = { algorithm: selectedAlgo, processes };
+    const payload = { processes: processes };
 
-    if (selectedAlgo === "RR") {
-        body.quantum = Number(document.getElementById("quantum").value);
+    try {
+        const res = await fetch("/api/schedule", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        
+        renderAllCharts(data);
+
+    } catch (err) {
+        console.error(err);
+        alert("Failed to fetch data. Check backend console.");
     }
-
-    const res = await fetch("/api/schedule", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-    });
-
-    const data = await res.json();
-    renderGantt(data.schedule, data.gantt_image);
 });
 
-function renderGantt(schedule, image64) {
-    ganttChart.innerHTML = "";
 
-    if (image64) {
-        const img = document.createElement("img");
-        img.src = `data:image/png;base64,${image64}`;
-        img.style.width = "100%";
-        img.style.borderRadius = "6px";
-        ganttChart.appendChild(img);
-        return;
+function renderAllCharts(data) {
+    const grid = document.getElementById("charts-grid");
+    const summaryBox = document.getElementById("comparison-summary");
+    const bestAlgoSpan = document.getElementById("best-algo-name");
+
+    grid.innerHTML = ""; 
+
+    // Show Best Algorithm
+    summaryBox.style.display = "block";
+    bestAlgoSpan.textContent = data.best_algorithm;
+
+    // Loop through results: FCFS, SJF, RR, etc.
+    // data.results is an object { "FCFS": {...}, "RR": {...} }
+    for (const [algoName, algoData] of Object.entries(data.results)) {
+        
+        const card = document.createElement("div");
+        const isWinner = algoName === data.best_algorithm;
+        
+        card.className = `algo-card ${isWinner ? "winner" : ""}`;
+
+        // Safe check for stats (handling 0 or undefined)
+        const avgWait = algoData.stats.avg_waiting_time !== undefined 
+                        ? algoData.stats.avg_waiting_time.toFixed(2) 
+                        : "N/A";
+        const avgTurn = algoData.stats.avg_turnaround_time !== undefined 
+                        ? algoData.stats.avg_turnaround_time.toFixed(2) 
+                        : "N/A";
+
+        card.innerHTML = `
+            <div class="algo-header">
+                <span class="algo-title">${algoName}</span>
+                ${isWinner ? '<span>⭐ Best Choice</span>' : ''}
+            </div>
+            
+            <div class="stats-grid">
+                <div><strong>Avg Waiting:</strong> ${avgWait}</div>
+                <div><strong>Avg Turnaround:</strong> ${avgTurn}</div>
+            </div>
+
+            ${algoData.gantt_image 
+                ? `<img src="data:image/png;base64,${algoData.gantt_image}" class="gantt-img" />` 
+                : `<div style="padding:20px; text-align:center; background:#eee;">No Chart</div>`
+            }
+        `;
+
+        grid.appendChild(card);
     }
-
-    // fallback for non-image algorithms
-    schedule.forEach(seg => {
-        const block = document.createElement("div");
-        block.style.display = "inline-block";
-        block.style.padding = "10px";
-        block.style.marginRight = "4px";
-        block.style.background = "#3f51b5";
-        block.style.borderRadius = "4px";
-        block.textContent = `${seg.pid} (${seg.start}-${seg.end})`;
-        ganttChart.appendChild(block);
-    });
 }
-

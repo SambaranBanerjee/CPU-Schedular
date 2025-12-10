@@ -3,55 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="A simple web application for visualizing the CPU scheduling through Gantt Chart.">
-    <title>CPU Scheduling Simulator</title>
-    <link href="style.css" rel="stylesheet"> 
+    <title>CPU Scheduling Comparator</title>
+    <link href="style.css" rel="stylesheet">
 </head>
 <body>
 
-<div class="left-panel">
-
-    <!-- Scheduling Type Buttons -->
-    <div class="algo-buttons">
-        <div class="algo-btn" data-type="FCFS">FCFS</div>
-        <div class="algo-btn" data-type="SJF">SJF</div>
-        <div class="algo-btn" data-type="SRTF">SRTF</div>
-        <div class="algo-btn" data-type="PRIORITY">PRIORITY</div>
-        <div class="algo-btn algo-active" data-type="RR">RR</div>
+<div class="main-container">
+    <div class="left-panel">
+        <h2>Scheduler Inputs</h2>
+        <form id="schedule-form">
+            <div id="process-container"></div>
+            
+            <div class="controls">
+                <button type="button" id="add-process" class="btn secondary">+ Add Process</button>
+                <button type="submit" class="btn primary">Run & Compare All</button>
+            </div>
+        </form>
     </div>
 
-    <h3 id="form-title">Round Robin Parameters</h3>
-
-    <!-- Form -->
-    <form id="schedule-form">
-
-        <div id="quantum-field">
-            <label>Time Quantum</label>
-            <input type="number" id="quantum" placeholder="Enter time quantum">
+    <div class="right-panel">
+        
+        <div id="comparison-summary" class="summary-box" style="display: none;">
+            <h3>Best Algorithm: <span id="best-algo-name"></span></h3>
+            <p>Based on minimum Average Waiting Time.</p>
         </div>
 
-        <hr style="border-color:#333; margin:15px 0;">
-
-        <h4>Processes</h4>
-        <div id="process-container"></div>
-
-        <button type="button" id="add-process">Add Process</button>
-        <button type="submit">Run Scheduler</button>
-
-    </form>
-
-</div>
-
-
-<!-- Right Gantt Chart Area -->
-<div class="right-panel">
-    <h3>Gantt Chart</h3>
-    <div id="gantt-chart">
-        <!-- JS will render chart here -->
+        <div id="charts-grid" class="charts-grid">
+            </div>
     </div>
 </div>
 
 <script src="script.js"></script>
-
 </body>
 </html>
