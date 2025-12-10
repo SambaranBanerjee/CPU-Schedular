@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import io, base64
 
 def priority_scheduling(processes: List[Dict[str, Any]]) -> Tuple[List[Tuple[str, float, float]], Dict[str, Any]]:
-
     # Normalize input: pid as str, others as float
     proc_list = [
         {
@@ -36,12 +35,7 @@ def priority_scheduling(processes: List[Dict[str, Any]]) -> Tuple[List[Tuple[str
     current_time = 0.0
     completed_count = 0
     
-    # We simulate time step by step (1 unit at a time) to allow preemption
-    # For floating point bursts, this logic assumes 1.0 steps. 
-    # If you need sub-integer precision, the step logic becomes more complex (event-driven).
-    
     while completed_count < n:
-        # 1. Find all processes that have arrived and are not finished
         ready_queue = [
             p for p in proc_list 
             if p["arrival"] <= current_time and remaining_time[p["pid"]] > 0
@@ -53,29 +47,22 @@ def priority_scheduling(processes: List[Dict[str, Any]]) -> Tuple[List[Tuple[str
             future_arrivals = [p["arrival"] for p in proc_list if p["arrival"] > current_time]
             if future_arrivals:
                 next_event = min(future_arrivals)
-                # Record IDLE block
                 schedule.append(("IDLE", current_time, next_event))
                 current_time = next_event
             else:
-                # Should not happen if completed_count < n, but safety break
                 break
             continue
 
-        # 2. Select process with highest priority (Lowest Number = Highest Priority)
-        # Tie-breaker: If priorities are equal, usually FCFS is used (Python's min is stable for lists)
         current_proc = min(ready_queue, key=lambda x: x["priority"])
         pid = current_proc["pid"]
 
-        # 3. Execute for 1 time unit
         start_t = current_time
         end_t = current_time + 1.0
         
         remaining_time[pid] -= 1.0
         current_time += 1.0
 
-        # 4. Check if finished
         if remaining_time[pid] <= 0:
-            # Determine exact finish time in case burst was less than 1.0 (float handling)
             diff = abs(remaining_time[pid]) 
             end_t -= diff # Adjust end time if we overshot (e.g. burst was 0.5)
             current_time -= diff # Correct global time
@@ -84,18 +71,13 @@ def priority_scheduling(processes: List[Dict[str, Any]]) -> Tuple[List[Tuple[str
             completed_count += 1
             completion[pid] = current_time
 
-        # 5. Add to Schedule (Visual Optimization)
-        # If the last entry in schedule is the same PID, extend it instead of creating a new entry.
-        # This prevents the Gantt chart from looking like a "barcode".
         if schedule and schedule[-1][0] == pid and abs(schedule[-1][2] - start_t) < 0.001:
-            # Update the 'end' time of the last tuple
             last_pid, last_start, _ = schedule[-1]
             schedule[-1] = (last_pid, last_start, end_t)
         else:
             schedule.append((pid, start_t, end_t))
 
 
-    # --- Stats Calculation (Same as before) ---
     stats: Dict[str, Any] = {}
     total_tat = 0.0
     total_wt = 0.0
@@ -124,7 +106,6 @@ def priority_scheduling(processes: List[Dict[str, Any]]) -> Tuple[List[Tuple[str
 
 
 def generate_priority_gantt(schedule: List[Tuple[str, float, float]], title="Preemptive Priority Gantt Chart") -> str:
-    # (This function remains exactly the same as your provided code)
     pids = []
     for pid, _, _ in schedule:
         if pid != "IDLE" and pid not in pids:

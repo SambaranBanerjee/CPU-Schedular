@@ -24,24 +24,19 @@ app = Flask(__name__)
 CORS(app)
 
 
-# ---------- Safe Converter ----------
 def safe_float(x, default=0.0):
     try:
         return float(x)
     except:
         return default
 
-
-# ---------- Normalize stats ----------
 def normalize_stats(stats_dict):
     clean = {}
     for k, v in stats_dict.items():
-        # Force the key to be a string so 'jsonify' doesn't crash on sorting
         clean[str(k)] = safe_float(v) 
     return clean
 
 
-# ---------- Serve Frontend ----------
 @app.route("/")
 def serve_frontend():
     return send_from_directory(FRONTEND_FOLDER, "index.html")
@@ -61,7 +56,6 @@ def home():
     })
 
 
-# ---------- MAIN SCHEDULING ENDPOINT ----------
 @app.route("/api/schedule", methods=["POST"])
 def schedule():
     try:
@@ -74,7 +68,6 @@ def schedule():
 
         results = {}
 
-        # ---- FCFS ----
         fcfs_schedule, fcfs_stats = fcfs(processes)
         results["FCFS"] = {
             "schedule": fcfs_schedule,
@@ -82,7 +75,6 @@ def schedule():
             "gantt_image": generate_fcfs_gantt(fcfs_schedule)
         }
 
-        # ---- SJF ----
         sjf_schedule, sjf_stats = sjf(processes)
         results["SJF"] = {
             "schedule": sjf_schedule,
@@ -90,7 +82,6 @@ def schedule():
             "gantt_image": generate_sjf_gantt(sjf_schedule)
         }
 
-        # ---- SRTF ----
         srtf_schedule, srtf_stats = srtf(processes)
         results["SRTF"] = {
             "schedule": srtf_schedule,
@@ -98,7 +89,6 @@ def schedule():
             "gantt_image": generate_srtf_gantt(srtf_schedule)
         }
 
-        # ---- PRIORITY ----
         pr_schedule, pr_stats = priority_scheduling(processes)
         results["PRIORITY"] = {
             "schedule": pr_schedule,
@@ -106,7 +96,6 @@ def schedule():
             "gantt_image": generate_priority_gantt(pr_schedule)
         }
 
-        # ---- ROUND ROBIN ----
         rr_schedule, rr_stats = round_robin(processes, quantum)
         results["RR"] = {
             "schedule": rr_schedule,
@@ -114,7 +103,6 @@ def schedule():
             "gantt_image": generate_gantt_image(rr_schedule, title=f"RR (q={quantum})")
         }
 
-        # ---- BEST ALGORITHM ----
         best = min(
             results.keys(),
             key=lambda algo: results[algo]["stats"].get("avg_waiting_time", float("inf"))
