@@ -5,11 +5,11 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import io, base64
 
-
-def round_robin(processes: List[Dict[str, Any]], quantum: float):
-    proc_list = [{"pid": p["pid"], "arrival": float(p["arrival"]), "burst": float(p["burst"])}
-                 for p in processes]
-
+def round_robin(processes: List[Dict[str, Any]], quantum: float) -> Tuple[List[Tuple[str, float, float]], Dict[str, Any]]:
+    proc_list = [
+        {"pid": str(p.get("pid")), "arrival": float(p.get("arrival", 0)), "burst": float(p.get("burst", 0))}
+        for p in processes
+    ]
     proc_list.sort(key=lambda x: x["arrival"])
     n = len(proc_list)
 
@@ -17,12 +17,13 @@ def round_robin(processes: List[Dict[str, Any]], quantum: float):
     arrival = {p["pid"]: p["arrival"] for p in proc_list}
     burst = {p["pid"]: p["burst"] for p in proc_list}
 
-    schedule = []
-    completion = {}
+    schedule: List[Tuple[str, float, float]] = []
+    completion: Dict[str, float] = {}
     q = deque()
     time = 0.0
     i = 0
 
+    # enqueue initial arrivals
     while i < n and proc_list[i]["arrival"] <= time:
         q.append(proc_list[i]["pid"])
         i += 1
@@ -38,10 +39,9 @@ def round_robin(processes: List[Dict[str, Any]], quantum: float):
             continue
 
         pid = q.popleft()
-        start = time
-        exec_time = min(quantum, rem[pid])
+        start = float(time)
+        exec_time = min(float(quantum), rem[pid])
         end = start + exec_time
-
         schedule.append((pid, start, end))
         rem[pid] -= exec_time
         time = end
@@ -55,56 +55,45 @@ def round_robin(processes: List[Dict[str, Any]], quantum: float):
         else:
             completion[pid] = time
 
-    stats = {}
-    total_wt = total_tat = 0.0
+    stats: Dict[str, Any] = {}
+    total_tat = total_wt = 0.0
     for p in proc_list:
         pid = p["pid"]
-        tat = completion[pid] - arrival[pid]
-        wt = tat - burst[pid]
+        comp = completion.get(pid, 0.0)
+        tat = float(comp - arrival[pid])
+        wt = float(tat - burst[pid])
         stats[pid] = {
             "arrival": arrival[pid],
             "burst": burst[pid],
-            "completion": completion[pid],
+            "completion": comp,
             "turnaround": tat,
             "waiting": wt
         }
         total_tat += tat
         total_wt += wt
 
-    stats["average"] = {
-        "turnaround": total_tat / n if n else 0,
-        "waiting": total_wt / n if n else 0,
-    }
+    stats["avg_turnaround_time"] = float(total_tat / n) if n else 0.0
+    stats["avg_waiting_time"] = float(total_wt / n) if n else 0.0
 
     return schedule, stats
 
-
-def generate_gantt_image(schedule, title="Round Robin Gantt Chart"):
-    pids = []
+def generate_gantt_image(schedule: List[Tuple[str, float, float]], title: str = "Round Robin Gantt Chart") -> str:
+    pids: List[str] = []
     for pid, _, _ in schedule:
         if pid != "IDLE" and pid not in pids:
             pids.append(pid)
-
     if any(seg[0] == "IDLE" for seg in schedule):
         pids.append("IDLE")
 
     y_pos = {pid: i for i, pid in enumerate(reversed(pids))}
-
-    fig, ax = plt.subplots(figsize=(10, 2 + len(pids) * 0.3))
     cmap = plt.get_cmap("tab20")
 
+    fig, ax = plt.subplots(figsize=(10, max(2, 2 + len(pids) * 0.3)))
     for idx, (pid, start, end) in enumerate(schedule):
         color = "#cccccc" if pid == "IDLE" else cmap(idx % 20)
-        ax.barh(
-            y=y_pos[pid],
-            width=end - start,
-            left=start,
-            height=0.6,
-            color=color,
-            edgecolor="black"
-        )
+        ax.barh(y=y_pos[pid], width=float(end - start), left=float(start), height=0.6, color=color, edgecolor="black")
         mid = (start + end) / 2
-        if end - start >= 0.4:
+        if (end - start) >= 0.4:
             ax.text(mid, y_pos[pid], pid, ha="center", va="center", fontsize=8)
 
     ax.set_yticks(list(y_pos.values()))
@@ -113,9 +102,8 @@ def generate_gantt_image(schedule, title="Round Robin Gantt Chart"):
     ax.set_title(title)
     ax.grid(axis="x", linestyle="--", alpha=0.3)
 
-    buffer = io.BytesIO()
-    plt.savefig(buffer, format="png", dpi=150, bbox_inches="tight")
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png", dpi=150, bbox_inches="tight")
     plt.close()
-    buffer.seek(0)
-
-    return base64.b64encode(buffer.getvalue()).decode("utf-8")
+    buf.seek(0)
+    return base64.b64encode(buf.getvalue()).decode("utf-8")

@@ -1,34 +1,43 @@
 from typing import List, Dict, Tuple, Any
 import matplotlib
-matplotlib.use("Agg")
+matplotlib.use("Agg")  # Use non-GUI backend for server environments
 import matplotlib.pyplot as plt
 import io, base64
 
+
 def fcfs(processes: List[Dict[str, Any]]) -> Tuple[List[Tuple[Any, float, float]], Dict[Any, Dict[str, float]]]:
-    # Defensive copy & normalize fields
+    """
+    First Come First Serve Scheduling Algorithm
+    Returns:
+        schedule: List of (pid, start_time, end_time)
+        stats: Dictionary of per-process stats + averages
+    """
+
+    # Defensive copy & type normalization
     proc_list = [{
         "pid": p["pid"],
         "arrival": float(p.get("arrival", 0)),
         "burst": float(p["burst"])
     } for p in processes]
 
+    # Sort by arrival time
     proc_list.sort(key=lambda x: x["arrival"])
 
     n = len(proc_list)
     arrival = {p["pid"]: p["arrival"] for p in proc_list}
     burst = {p["pid"]: p["burst"] for p in proc_list}
 
-    schedule = []   # (pid, start, end)
+    schedule = []       # (pid, start, end)
     completion = {}
+    time = 0.0          # global clock
 
-    time = 0.0
-    stats = {}
-
+    # Build schedule
     for p in proc_list:
         pid = p["pid"]
         at = arrival[pid]
         bt = burst[pid]
 
+        # CPU idle time
         if time < at:
             schedule.append(("IDLE", time, at))
             time = at
@@ -38,16 +47,20 @@ def fcfs(processes: List[Dict[str, Any]]) -> Tuple[List[Tuple[Any, float, float]
 
         schedule.append((pid, start, end))
         completion[pid] = end
+
         time = end
 
-    # Stats
+    # -----------------------------
+    #   Calculate Statistics
+    # -----------------------------
     total_tat = total_wt = 0.0
     out_stats = {}
 
     for p in proc_list:
         pid = p["pid"]
-        tat = completion[pid] - arrival[pid]
-        wt = tat - burst[pid]
+        tat = completion[pid] - arrival[pid]      # Turnaround Time
+        wt = tat - burst[pid]                     # Waiting Time
+
         out_stats[pid] = {
             "arrival": arrival[pid],
             "burst": burst[pid],
@@ -55,17 +68,21 @@ def fcfs(processes: List[Dict[str, Any]]) -> Tuple[List[Tuple[Any, float, float]
             "turnaround": tat,
             "waiting": wt
         }
+
         total_tat += tat
         total_wt += wt
 
-    out_stats["average"] = {
-        "turnaround": total_tat / n if n else 0.0,
-        "waiting": total_wt / n if n else 0.0
-    }
+    out_stats["avg_turnaround_time"] = float(total_tat / n) if n else 0.0
+    out_stats["avg_waiting_time"] = float(total_wt / n) if n else 0.0
 
     return schedule, out_stats
 
+
 def generate_fcfs_gantt(schedule, title="FCFS Gantt Chart"):
+    """
+    Generates a Gantt chart (PNG base64) for FCFS schedule.
+    """
+    # Collect PIDs ensuring IDLE appears last
     pids = []
     for pid, _, _ in schedule:
         if pid != "IDLE" and pid not in pids:
@@ -77,6 +94,8 @@ def generate_fcfs_gantt(schedule, title="FCFS Gantt Chart"):
     cmap = plt.get_cmap("tab20")
 
     fig, ax = plt.subplots(figsize=(10, 2 + len(pids) * 0.3))
+
+    # Draw each task bar
     for idx, (pid, start, end) in enumerate(schedule):
         color = "#cccccc" if pid == "IDLE" else cmap(idx % 20)
         ax.barh(
@@ -88,6 +107,7 @@ def generate_fcfs_gantt(schedule, title="FCFS Gantt Chart"):
             edgecolor="black",
         )
 
+        # Label task inside bar
         mid = (start + end) / 2
         if end - start >= 0.5:
             ax.text(mid, y_pos[pid], pid, ha="center", va="center", fontsize=8)
@@ -98,8 +118,10 @@ def generate_fcfs_gantt(schedule, title="FCFS Gantt Chart"):
     ax.set_title(title)
     ax.grid(axis="x", linestyle="--", alpha=0.3)
 
+    # Convert plot to Base64 PNG
     buffer = io.BytesIO()
     plt.savefig(buffer, format="png", dpi=150, bbox_inches="tight")
     plt.close()
     buffer.seek(0)
+
     return base64.b64encode(buffer.getvalue()).decode("utf-8")

@@ -4,14 +4,13 @@ import sys
 import os
 import traceback
 
-# Add the project root to system path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Define the path to the frontend folder relative to this file
-# api/index.py -> parent -> frontend
-FRONTEND_FOLDER = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'frontend')
+FRONTEND_FOLDER = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    'frontend'
+)
 
-# Import schedulers
 try:
     from schedulers.priority import priority_scheduling, generate_priority_gantt
     from schedulers.fcfs import fcfs, generate_fcfs_gantt
@@ -24,73 +23,115 @@ except ImportError as e:
 app = Flask(__name__)
 CORS(app)
 
-# --- Routes to Serve Frontend (Fallback) ---
-@app.route('/')
-def serve_frontend():
-    # Serves the index.html file when / is requested
-    return send_from_directory(FRONTEND_FOLDER, 'index.html')
 
-@app.route('/<path:filename>')
+# ---------- Safe Converter ----------
+def safe_float(x, default=0.0):
+    try:
+        return float(x)
+    except:
+        return default
+
+
+# ---------- Normalize stats ----------
+def normalize_stats(stats_dict):
+    clean = {}
+    for k, v in stats_dict.items():
+        # Force the key to be a string so 'jsonify' doesn't crash on sorting
+        clean[str(k)] = safe_float(v) 
+    return clean
+
+
+# ---------- Serve Frontend ----------
+@app.route("/")
+def serve_frontend():
+    return send_from_directory(FRONTEND_FOLDER, "index.html")
+
+
+@app.route("/<path:filename>")
 def serve_static_files(filename):
-    # Serves CSS, JS, and other static files
     return send_from_directory(FRONTEND_FOLDER, filename)
 
-# --- API Routes ---
-@app.route('/api')
-@app.route('/api/')
+
+@app.route("/api")
+@app.route("/api/")
 def home():
     return jsonify({
-        "status": "active", 
+        "status": "active",
         "message": "Scheduler API is running."
     })
 
+
+# ---------- MAIN SCHEDULING ENDPOINT ----------
 @app.route("/api/schedule", methods=["POST"])
 def schedule():
     try:
         data = request.get_json()
         if not data:
-             return jsonify({"error": "No JSON data received"}), 400
+            return jsonify({"error": "No JSON data received"}), 400
 
-        algorithm = data.get("algorithm")
         processes = data.get("processes", [])
-        
-        schedule = []
-        stats = {}
-        image = ""
+        quantum = safe_float(data.get("quantum", 2), default=2)
 
-        if algorithm == "RR":
-            quantum = float(data.get("quantum", 2))
-            schedule, stats = round_robin(processes, quantum)
-            image = generate_gantt_image(schedule, title=f"Round Robin (q={quantum})")
-            
-        elif algorithm == "PRIORITY":
-            schedule, stats = priority_scheduling(processes)
-            image = generate_priority_gantt(schedule)
+        results = {}
 
-        elif algorithm == "FCFS":
-            schedule, stats = fcfs(processes)
-            image = generate_fcfs_gantt(schedule)
+        # ---- FCFS ----
+        fcfs_schedule, fcfs_stats = fcfs(processes)
+        results["FCFS"] = {
+            "schedule": fcfs_schedule,
+            "stats": normalize_stats(fcfs_stats),
+            "gantt_image": generate_fcfs_gantt(fcfs_schedule)
+        }
 
-        elif algorithm == "SJF":
-            schedule, stats = sjf(processes)
-            image = generate_sjf_gantt(schedule)
-        
-        elif algorithm == "SRTF":
-            schedule, stats = srtf(processes)
-            image = generate_srtf_gantt(schedule)
-        
-        else:
-            return jsonify({"error": f"Unknown algorithm '{algorithm}'"}), 400
+        # ---- SJF ----
+        sjf_schedule, sjf_stats = sjf(processes)
+        results["SJF"] = {
+            "schedule": sjf_schedule,
+            "stats": normalize_stats(sjf_stats),
+            "gantt_image": generate_sjf_gantt(sjf_schedule)
+        }
+
+        # ---- SRTF ----
+        srtf_schedule, srtf_stats = srtf(processes)
+        results["SRTF"] = {
+            "schedule": srtf_schedule,
+            "stats": normalize_stats(srtf_stats),
+            "gantt_image": generate_srtf_gantt(srtf_schedule)
+        }
+
+        # ---- PRIORITY ----
+        pr_schedule, pr_stats = priority_scheduling(processes)
+        results["PRIORITY"] = {
+            "schedule": pr_schedule,
+            "stats": normalize_stats(pr_stats),
+            "gantt_image": generate_priority_gantt(pr_schedule)
+        }
+
+        # ---- ROUND ROBIN ----
+        rr_schedule, rr_stats = round_robin(processes, quantum)
+        results["RR"] = {
+            "schedule": rr_schedule,
+            "stats": normalize_stats(rr_stats),
+            "gantt_image": generate_gantt_image(rr_schedule, title=f"RR (q={quantum})")
+        }
+
+        # ---- BEST ALGORITHM ----
+        best = min(
+            results.keys(),
+            key=lambda algo: results[algo]["stats"].get("avg_waiting_time", float("inf"))
+        )
 
         return jsonify({
-            "schedule": schedule,
-            "stats": stats,
-            "gantt_image": image
+            "results": results,
+            "best_algorithm": best
         })
-    
+
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"error": str(e), "trace": traceback.format_exc()}), 500
-    
+        return jsonify({
+            "error": str(e),
+            "trace": traceback.format_exc()
+        }), 500
+
+
 if __name__ == "__main__":
     app.run(debug=True)
